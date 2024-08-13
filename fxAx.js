@@ -2,6 +2,7 @@ var fxAx = function(){
 
 	const nMoveIdxValue = 9999;
 	const self = this;
+
 	var oProxyModelObject = {
 		"data": {},
 		"datalist": {}
@@ -74,7 +75,7 @@ var fxAx = function(){
 		var self = this;
 		self.bIsEditMode = false;
 
-		var editRow = function(oValueObject, oRowElement){
+		self.editRow = function(oValueObject, oRowElement){
 		  
 		  for (let key in oValueObject){
 
@@ -96,7 +97,7 @@ var fxAx = function(){
 		  clone.classList.remove('d-none');
 		  console.log('clone');
 		  console.log(clone);
-		  editRow(oValueObject, clone);
+		  self.editRow(oValueObject, clone);
 		  table.appendChild(clone); // add new row to end of table
 		}
 
@@ -105,7 +106,7 @@ var fxAx = function(){
 		}
 		
 		// a proxy for our array
-		self.proxy = new Proxy(oTargetList, {
+		self.d = new Proxy(oTargetList, {
 		  deleteProperty: function(target, property) {
 
 		  	let nProperty = parseInt(property);
@@ -149,7 +150,7 @@ var fxAx = function(){
 
 							let oTableBody = document.getElementsByClassName(sElementId)[0];
 							let oTableRow = oTableBody.querySelectorAll("#table-id")[nProperty];
-							editRow(value, oTableRow);
+							self.editRow(value, oTableRow);
 							self.bIsEditMode = false;
 
 						}else{
@@ -162,7 +163,7 @@ var fxAx = function(){
 					}
 
 				}
-				return self.proxy;
+				return self.d;
 		  }
 		});
 

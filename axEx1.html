@@ -15,7 +15,7 @@ ax.docReady(function() {
 	oProxyModelObject = ax.applyBindings(oModelObject, document.getElementById("test-element"));	
 
 	console.log("Set a specific index..");
-	oProxyModelObject.datalist.testlist.proxy[0] = {"a":1,"b":2,"c":3,"d":4};
+	oProxyModelObject.datalist.testlist.d[0] = {"a":1,"b":2,"c":3,"d":4};
 
 }); // end of docReady
 
@@ -23,19 +23,27 @@ var idx = 0;
 
 var clickAdd=function(){
 	idx++;
-	oProxyModelObject.datalist.testlist.proxy.push({"a":1+idx,"b":2,"c":3,"d":4});
+	oProxyModelObject.datalist.testlist.d.push({"a":1+idx,"b":2,"c":3,"d":4});
 }
 
 var clickEdit=function(){
-	oProxyModelObject.datalist.testlist.bIsEditMode = true;
-	oProxyModelObject.datalist.testlist.proxy.splice(0, 1, {"a":10,"b":2,"c":3,"d":4});
+	let testlist = oProxyModelObject.datalist.testlist;
+	testlist.bIsEditMode = true;
+	let oRowElement = document.getElementById("table-1").rows[3]; // second row
+	testlist.d.splice(0, 1, {"a":10,"b":2,"c":3,"d":4});
+	testlist.editRow({"a":20,"b":2,"c":3,"d":4}, oRowElement);
 }
 
-var clickDelete=function(){
-	console.log('delete');
-	//oProxyModelObject.datalist.testlist.proxy.splice(0,2);
-	oProxyModelObject.datalist.testlist.proxy.pop();
-	//oProxyModelObject.datalist.testlist.proxy.splice(0,oProxyModelObject.datalist.testlist.proxy.length);
+var clickDelete=function(x){
+	let nRowIndex = x.parentElement.parentElement.rowIndex - 2;
+
+	console.log(x.parentElement);
+	console.log('delete row index ' + x.parentElement.parentElement.rowIndex);
+	console.log(document.getElementById("table-1").rows[0].rowIndex);
+
+	oProxyModelObject.datalist.testlist.d.splice(nRowIndex,1);
+	//oProxyModelObject.datalist.testlist.d.pop();
+	//oProxyModelObject.datalist.testlist.d.splice(0,oProxyModelObject.datalist.testlist.proxy.length);
 }
 var i=0;
 var clickChange=function(){
@@ -50,7 +58,7 @@ var clickChange=function(){
 <div class="container">
 <h1 class="t-test">Test</h1>
 <h1 class="t-test2">Test</h1>
-<table class="table table-stripe table-bordered">
+<table id="table-1" class="table table-stripe table-bordered">
 <thead>
 <tr><th>a</th><th>b</th><th>c</th>
 </tr>
@@ -60,7 +68,7 @@ var clickChange=function(){
 	<td class="lt-a">1</td>
 	<td class="lt-b">2</td>
 	<td class="lt-c">3</td>
-	<td class=""><button class="btn btn-primary" onclick="clickDelete();">Delete</button></td>
+	<td class=""><button class="btn btn-primary" onclick="clickDelete(this);">Delete</button></td>
 </tbody>
 </table>
 
