@@ -1,0 +1,74 @@
+<html>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+<script src="fxAx.js"></script>
+<script>
+var ax = new fxAx();
+var oProxyModelObject = {};
+
+ax.docReady(function() {
+
+	let oModelObject = {};
+	oModelObject.testlist = [];
+	oModelObject.test = "hello";
+
+	oProxyModelObject = ax.applyBindings(oModelObject, document.getElementById("test-element"));	
+
+	console.log("Set a specific index..");
+	oProxyModelObject.datalist.testlist.proxy[0] = {"a":1,"b":2,"c":3,"d":4};
+
+}); // end of docReady
+
+var idx = 0;
+
+var clickAdd=function(){
+	idx++;
+	oProxyModelObject.datalist.testlist.proxy.push({"a":1+idx,"b":2,"c":3,"d":4});
+}
+
+var clickEdit=function(){
+	oProxyModelObject.datalist.testlist.bIsEditMode = true;
+	oProxyModelObject.datalist.testlist.proxy.splice(0, 1, {"a":10,"b":2,"c":3,"d":4});
+}
+
+var clickDelete=function(){
+	console.log('delete');
+	//oProxyModelObject.datalist.testlist.proxy.splice(0,2);
+	oProxyModelObject.datalist.testlist.proxy.pop();
+	//oProxyModelObject.datalist.testlist.proxy.splice(0,oProxyModelObject.datalist.testlist.proxy.length);
+}
+var i=0;
+var clickChange=function(){
+	i++;
+	oProxyModelObject.data.test = "hello" + i;
+	oProxyModelObject.data.test2 = "abc" + i;
+}
+
+</script>
+
+<body id="test-element">
+<div class="container">
+<h1 class="t-test">Test</h1>
+<h1 class="t-test2">Test</h1>
+<table class="table table-stripe table-bordered">
+<thead>
+<tr><th>a</th><th>b</th><th>c</th>
+</tr>
+</thead>
+<tbody class="l-testlist">
+<tr id="rowToClone" class="d-none">
+	<td class="lt-a">1</td>
+	<td class="lt-b">2</td>
+	<td class="lt-c">3</td>
+	<td class=""><button class="btn btn-primary" onclick="clickDelete();">Delete</button></td>
+</tbody>
+</table>
+
+<button class="btn btn-primary" onclick="clickChange();">Change</button>
+<button class="btn btn-primary" onclick="clickAdd();">Add</button>
+<button class="btn btn-primary" onclick="clickEdit();">Edit</button>
+
+
+</div>
+</body>
+</html>
