@@ -2,6 +2,29 @@ var fxAx = function(){
 
 	const nMoveIdxValue = 9999;
 	const self = this;
+	const oTargetObjectList = {};
+	const sTargetObjectPrefix = "d";
+	const sTargetListPrefix = "l";
+	var nTargetObjectIndex = 0;
+	var nTargetListIndex = 0;
+	var oBindingElementObject = {};
+	var oBindingTargetList = {};
+
+	var targetProxy = new Proxy(oTargetObjectList, {
+	 set: function (target, key, value) {
+
+		  console.log(`${key} set to ${value}`);
+		  target[key] = value;
+
+		  if (oBindingElementObject && oBindingElementObject[key]){
+			 	for (let i=0; i<oBindingElementObject[key].length; i++){
+			 		oBindingElementObject[key][i].innerHTML = value;
+			 	}
+		  }
+
+		  return true;
+	  }
+	});
 
 	var oProxyModelObject = {
 		"data": {},
@@ -19,13 +42,23 @@ var fxAx = function(){
 	  }
 	}    
 
+	self.editRow = function(oValueObject, oRowElement){
+	  
+	  for (let key in oValueObject){
+
+	  	let oCol = oRowElement.getElementsByClassName("lt-" + key);
+	  	for (let i=0; i<oCol.length; i++){
+	  		oCol[i].innerHTML = oValueObject[key];
+	  	}
+	  	
+	  } // end for 
+
+	}
+
 	if (!("Proxy" in window)) {
 	  console.warn("Your browser doesn't support Proxies.");
 	  return;
 	}
-
-	var oBindingElementObject = {};
-	var oBindingTargetList = {};
 
 	var getAllChildElementIds = function(element, ids = []) {
 
@@ -43,60 +76,52 @@ var fxAx = function(){
 
 	} // end of getAllChildElementIds
 
-	self.observable = function(oTargetObject){
+	self.observable = function(targetValue){
 		
-		if (!oTargetObject){
-			oTargetObject = {};
+		var self0=this;
+		self0.sTargetObjectName = sTargetObjectPrefix + nTargetObjectIndex;
+		self0.sElementId = self0.sTargetObjectName;
+		nTargetObjectIndex++;
+
+		if (targetValue){
+			oTargetObjectList[self0.sTargetObjectName] = targetValue;
 		}
 
-		var targetProxy = new Proxy(oTargetObject, {
-		 set: function (target, key, value) {
+		return function(targetValue, sElementId){
 
-			  console.log(`${key} set to ${value}`);
-			  target[key] = value;
+			if (sElementId){
+				self0.sElementId = sElementId;
+			}
+			if (!targetValue){
+				return oTargetObjectList[self0.sTargetObjectName];
+			}
 
-			  if (oBindingElementObject && oBindingElementObject[key]){
-				 	for (let i=0; i<oBindingElementObject[key].length; i++){
-				 		console.log(oBindingElementObject[key][i]);
-				 		oBindingElementObject[key][i].innerHTML = value;
-				 	}
-			  }
+			targetProxy[self0.sElementId] = targetValue;
 
-			  return true;
-		  }
-		});
-
-		return targetProxy;
+		};
 
 	} // end of observable
-	
-	self.observableList = function(oTargetList, sElementId){
+
+	self.observableList = function(oTargetList){
 		
-		var self = this;
-		self.bIsEditMode = false;
+		var self1 = this;
+		self1.sTargetListName = sTargetObjectPrefix + nTargetListIndex;
+		self1.sElementId = "";
+		nTargetListIndex++;
+		self1.bIsEditMode = false;
 
-		self.editRow = function(oValueObject, oRowElement){
-		  
-		  for (let key in oValueObject){
-
-		  	let oCol = oRowElement.getElementsByClassName("lt-" + key);
-		  	for (let i=0; i<oCol.length; i++){
-		  		oCol[i].innerHTML = oValueObject[key];
-		  	}
-		  	
-		  } // end for 
-
-		}
 		var cloneRow = function(oValueObject) {
 
-			var table = document.getElementsByClassName(sElementId)[0]; // find table to append to
-		  var row = table.querySelector("#rowToClone"); // find row to copy
+		  var tables = document.getElementsByClassName(self1.sElementId); // find table to append to
+		  if (tables.length == 0){
+		  	return;
+		  }
+		  var table = tables[0];
+		  var row = table.querySelector("#"+self1.sElementId+"-row"); // find row to copy
 		  var clone = row.cloneNode(true); // copy children too
 
 		  clone.id = "table-id"; // change id or other attributes/contents
 		  clone.classList.remove('d-none');
-		  console.log('clone');
-		  console.log(clone);
 		  self.editRow(oValueObject, clone);
 		  table.appendChild(clone); // add new row to end of table
 		}
@@ -106,15 +131,15 @@ var fxAx = function(){
 		}
 		
 		// a proxy for our array
-		self.d = new Proxy(oTargetList, {
+		self1.d = new Proxy(oTargetList, {
 		  deleteProperty: function(target, property) {
 
 		  	let nProperty = parseInt(property);
 				delete target[property];
 				if (nLastMoveIdx == nMoveIdxValue){
-					document.getElementsByClassName(sElementId)[0].deleteRow(nProperty + 1);
+					document.getElementsByClassName(self1.sElementId)[0].deleteRow(nProperty + 1);
 				}else{
-					document.getElementsByClassName(sElementId)[0].deleteRow(nLastMoveIdx + 1);
+					document.getElementsByClassName(self1.sElementId)[0].deleteRow(nLastMoveIdx + 1);
 				}
 				
 				console.log("Deleted %s", nLastMoveIdx);
@@ -128,15 +153,18 @@ var fxAx = function(){
 				target[property] = value;
 				nProperty = parseInt(property);
 
-				if (property != 'length'){
+				if (property != 'length' && property != 'get_name' && property != 'set_edit_mode'){
 
 					console.log("Set %s to %o", property, value);
 					// check if add
+					if (receiver.length == nProperty + 1 && self1.bIsEditMode==false){
 
-					if (receiver.length == nProperty + 1 && self.bIsEditMode==false){
-
-						let oTableBody = document.getElementsByClassName(sElementId)[0];
-						let oTableRow = oTableBody.querySelector("#table-id");
+						let oTableBodys = document.getElementsByClassName(self1.sElementId);
+						if (oTableBodys.length == 0){
+							return self1.d;
+						}
+						let oTableBody = oTableBodys[0];
+						let oTableRow = oTableBody.querySelector("#" + self1.sElementId + "-list");
 
 						cloneRow(value);
 						//Set 0 to {a: 1, b: 2, c: 3, d: 4}
@@ -146,12 +174,16 @@ var fxAx = function(){
 						// array move 1 -> 0, 2 -> 1
 						// get last move for delete
 						
-						if (self.bIsEditMode){
+						if (self1.bIsEditMode){
 
-							let oTableBody = document.getElementsByClassName(sElementId)[0];
+							let oTableBodys = document.getElementsByClassName(self1.sElementId);
+							if (oTableBodys.length == 0){
+								return self1.d;
+							}
+							let oTableBody = oTableBodys[0];
 							let oTableRow = oTableBody.querySelectorAll("#table-id")[nProperty];
 							self.editRow(value, oTableRow);
-							self.bIsEditMode = false;
+							self1.bIsEditMode = false;
 
 						}else{
 							if (nLastMoveIdx > nProperty){
@@ -163,9 +195,26 @@ var fxAx = function(){
 					}
 
 				}
-				return self.d;
+				return self1.d;
 		  }
 		});
+
+		self1.d.set_element_id = function(sElementId){
+			return self1.sElementId = sElementId;
+		}
+		self1.d.set_edit_mode = function(pIsEditMode){
+			return self1.bIsEditMode = pIsEditMode;
+		}		
+		return function(oTargetList){
+
+			if (oTargetList){
+				self1.d.splice(0,self1.d.length);
+				self1.d = oTargetList;
+			}else{
+				return self1.d;	
+			}
+
+		};
 
 	} // end of observableList
 	
@@ -175,8 +224,7 @@ var fxAx = function(){
 
 		var applyTextBinding = function(sModelKey, sModelValue, sElementId){
 
-			// initialize model target object default value
-			self.oModelObject[sModelKey] = sModelValue;
+			sModelValue(null,sModelKey);
 
 			// register dom element with model key
 			if (!oBindingElementObject[sModelKey]){
@@ -188,14 +236,13 @@ var fxAx = function(){
 
 		var applyListBinding = function(sModelKey, oModelList, sElementId){
 
-			// initialize model target object default value
-			oProxyModelObject.datalist[sModelKey] = new self.observableList(oModelList, sElementId);
-
+			oModelList().set_element_id(sElementId);
 			// register dom element with model key
 			if (!oBindingElementObject[sModelKey]){
 				oBindingElementObject[sModelKey] = [];
 			}
 			oBindingElementObject[sModelKey].push(document.getElementsByClassName(sElementId)[0]);
+			oBindingTargetList[sModelKey] 
 
 		} // end of applyTextBinding
 
@@ -211,28 +258,28 @@ var fxAx = function(){
 			switch (sModelType){
 			case "t":
 				if (!oModelObject[sModelKey]){
-					oModelObject[sModelKey] = "";
+					oModelObject[sModelKey] = new self.observable();
 				}
 				applyTextBinding(sModelKey, oModelObject[sModelKey], sElementId);
 				break;
 			case "l":
 				if (!oModelObject[sModelKey]){
-					oModelObject[sModelKey] = [];
+					oModelObject[sModelKey] = new self.observableList();
 				}
 				if (typeof oModelObject[sModelKey] == 'string'){
-					oModelObject[sModelKey] = [];
+					oModelObject[sModelKey] = new self.observableList();
 				}
 				applyListBinding(sModelKey, oModelObject[sModelKey], sElementId);
 				break;
 			case "s":
 				if (!oModelObject[sModelKey]){
-					oModelObject[sModelKey] = "";
+					oModelObject[sModelKey] = new self.observable();
 				}
 				applyTextBinding(sModelKey, oModelObject[sModelKey], sElementId);
 				break;
 			case "f":
 				if (!oModelObject[sModelKey]){
-					oModelObject[sModelKey] = "";
+					oModelObject[sModelKey] = new self.observable();
 				}
 				applyTextBinding(sModelKey, oModelObject[sModelKey], sElementId);
 				break;

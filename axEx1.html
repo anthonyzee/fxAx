@@ -4,18 +4,37 @@
 <script src="fxAx.js"></script>
 <script>
 var ax = new fxAx();
+var oModelObject = {};
 var oProxyModelObject = {};
+
+// unit test text observable
+oModelObject.sHelloText1 = new ax.observable();
+
+oModelObject.sHelloText1("B");
+oModelObject.sHelloText1("C");
+
+
+// unit test text observable
+oModelObject.sHelloText2 = new ax.observable();
+oModelObject.sHelloText2("1");
+oModelObject.sHelloText2("2");
+
+
+oModelObject.testlist = new ax.observableList();
+oModelObject.testlist().push({"a":1,"b":2,"c":3,"d":4});
+
+oModelObject.testlist1 = new ax.observableList();
+oModelObject.testlist1().push({"a":1,"b":2,"c":3,"d":4});
 
 ax.docReady(function() {
 
-	let oModelObject = {};
-	oModelObject.testlist = [];
-	oModelObject.test = "hello";
 
-	oProxyModelObject = ax.applyBindings(oModelObject, document.getElementById("test-element"));	
+	ax.applyBindings(oModelObject, document.getElementById("test-element"));	
 
 	console.log("Set a specific index..");
-	oProxyModelObject.datalist.testlist.d[0] = {"a":1,"b":2,"c":3,"d":4};
+	oModelObject.testlist()[0] = {"a":1,"b":2,"c":3,"d":4};
+
+
 
 }); // end of docReady
 
@@ -23,33 +42,27 @@ var idx = 0;
 
 var clickAdd=function(){
 	idx++;
-	oProxyModelObject.datalist.testlist.d.push({"a":1+idx,"b":2,"c":3,"d":4});
+	oModelObject.testlist().push({"a":1+idx,"b":2,"c":3,"d":4});
 }
 
 var clickEdit=function(){
-	let testlist = oProxyModelObject.datalist.testlist;
-	testlist.bIsEditMode = true;
-	let oRowElement = document.getElementById("table-1").rows[3]; // second row
-	testlist.d.splice(0, 1, {"a":10,"b":2,"c":3,"d":4});
-	testlist.editRow({"a":20,"b":2,"c":3,"d":4}, oRowElement);
+	let testlist = oModelObject.testlist();
+	testlist.set_edit_mode(true);
+	let oRowElement = document.getElementById("l-testlist-list").rows[3]; // second row
+	testlist.splice(0, 1, {"a":10,"b":2,"c":3,"d":4});
+	ax.editRow({"a":20,"b":2,"c":3,"d":4}, oRowElement);
 }
 
 var clickDelete=function(x){
 	let nRowIndex = x.parentElement.parentElement.rowIndex - 2;
 
-	console.log(x.parentElement);
-	console.log('delete row index ' + x.parentElement.parentElement.rowIndex);
-	console.log(document.getElementById("table-1").rows[0].rowIndex);
-
-	oProxyModelObject.datalist.testlist.d.splice(nRowIndex,1);
-	//oProxyModelObject.datalist.testlist.d.pop();
-	//oProxyModelObject.datalist.testlist.d.splice(0,oProxyModelObject.datalist.testlist.proxy.length);
+	oModelObject.testlist().splice(nRowIndex,1);
 }
 var i=0;
 var clickChange=function(){
 	i++;
-	oProxyModelObject.data.test = "hello" + i;
-	oProxyModelObject.data.test2 = "abc" + i;
+	oModelObject.test("hello" + i);
+	oModelObject.test2("abc" + i);
 }
 
 </script>
@@ -58,13 +71,13 @@ var clickChange=function(){
 <div class="container">
 <h1 class="t-test">Test</h1>
 <h1 class="t-test2">Test</h1>
-<table id="table-1" class="table table-stripe table-bordered">
+<table id="l-testlist-list" class="table table-stripe table-bordered">
 <thead>
 <tr><th>a</th><th>b</th><th>c</th>
 </tr>
 </thead>
 <tbody class="l-testlist">
-<tr id="rowToClone" class="d-none">
+<tr id="l-testlist-row" class="d-none">
 	<td class="lt-a">1</td>
 	<td class="lt-b">2</td>
 	<td class="lt-c">3</td>
