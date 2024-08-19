@@ -8,22 +8,22 @@ var oModelObject = {};
 var oProxyModelObject = {};
 
 // unit test text observable
-oModelObject.sHelloText1 = new ax.observable();
+oModelObject.sHelloText1 = ax.observable();
 
 oModelObject.sHelloText1("B");
 oModelObject.sHelloText1("C");
 
 
 // unit test text observable
-oModelObject.sHelloText2 = new ax.observable();
+oModelObject.sHelloText2 = ax.observable();
 oModelObject.sHelloText2("1");
 oModelObject.sHelloText2("2");
 
 
-oModelObject.testlist = new ax.observableList();
+oModelObject.testlist = ax.observableList();
 oModelObject.testlist().push({"a":1,"b":2,"c":3,"d":4});
 
-oModelObject.testlist1 = new ax.observableList();
+oModelObject.testlist1 = ax.observableList();
 oModelObject.testlist1().push({"a":1,"b":2,"c":3,"d":4});
 
 ax.docReady(function() {
@@ -47,7 +47,7 @@ var clickAdd=function(){
 
 var clickEdit=function(){
 	let testlist = oModelObject.testlist();
-	testlist.set_edit_mode(true);
+	oModelObject.testlist(null,true)
 	let oRowElement = document.getElementById("l-testlist-list").rows[3]; // second row
 	testlist.splice(0, 1, {"a":10,"b":2,"c":3,"d":4});
 	ax.editRow({"a":20,"b":2,"c":3,"d":4}, oRowElement);

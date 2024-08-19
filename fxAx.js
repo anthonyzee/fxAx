@@ -8,7 +8,6 @@ var fxAx = function(){
 	var nTargetObjectIndex = 0;
 	var nTargetListIndex = 0;
 	var oBindingElementObject = {};
-	var oBindingTargetList = {};
 
 	var targetProxy = new Proxy(oTargetObjectList, {
 	 set: function (target, key, value) {
@@ -76,7 +75,7 @@ var fxAx = function(){
 
 	} // end of getAllChildElementIds
 
-	self.observable = function(targetValue){
+	var observable = function(targetValue){
 		
 		var self0=this;
 		self0.sTargetObjectName = sTargetObjectPrefix + nTargetObjectIndex;
@@ -102,28 +101,36 @@ var fxAx = function(){
 
 	} // end of observable
 
-	self.observableList = function(oTargetList){
+	self.observable = function(targetValue){
+		return new observable(targetValue);
+	}
+
+	var observableList = function(oTargetList){
 		
-		var self1 = this;
+		const self1 = this;
+		const sTemplateRowId = "table-row-id";
+
+		var oElementBodyObject;
+		var oElementListObject;
+		var oElementRowObject;
+
 		self1.sTargetListName = sTargetObjectPrefix + nTargetListIndex;
 		self1.sElementId = "";
+		self1.sModelKey = "";
 		nTargetListIndex++;
 		self1.bIsEditMode = false;
 
 		var cloneRow = function(oValueObject) {
 
-		  var tables = document.getElementsByClassName(self1.sElementId); // find table to append to
-		  if (tables.length == 0){
+		  if (!oElementRowObject){
 		  	return;
 		  }
-		  var table = tables[0];
-		  var row = table.querySelector("#"+self1.sElementId+"-row"); // find row to copy
-		  var clone = row.cloneNode(true); // copy children too
+		  var clone = oElementRowObject.cloneNode(true); // copy children too
 
-		  clone.id = "table-id"; // change id or other attributes/contents
+		  clone.id = sTemplateRowId; // change id or other attributes/contents
 		  clone.classList.remove('d-none');
 		  self.editRow(oValueObject, clone);
-		  table.appendChild(clone); // add new row to end of table
+		  oElementBodyObject.appendChild(clone); // add new row to end of table
 		}
 
 		if (!oTargetList){
@@ -137,9 +144,9 @@ var fxAx = function(){
 		  	let nProperty = parseInt(property);
 				delete target[property];
 				if (nLastMoveIdx == nMoveIdxValue){
-					document.getElementsByClassName(self1.sElementId)[0].deleteRow(nProperty + 1);
+					oElementBodyObject.deleteRow(nProperty + 1);
 				}else{
-					document.getElementsByClassName(self1.sElementId)[0].deleteRow(nLastMoveIdx + 1);
+					oElementBodyObject.deleteRow(nLastMoveIdx + 1);
 				}
 				
 				console.log("Deleted %s", nLastMoveIdx);
@@ -159,12 +166,9 @@ var fxAx = function(){
 					// check if add
 					if (receiver.length == nProperty + 1 && self1.bIsEditMode==false){
 
-						let oTableBodys = document.getElementsByClassName(self1.sElementId);
-						if (oTableBodys.length == 0){
+						if (!oElementBodyObject){
 							return self1.d;
 						}
-						let oTableBody = oTableBodys[0];
-						let oTableRow = oTableBody.querySelector("#" + self1.sElementId + "-list");
 
 						cloneRow(value);
 						//Set 0 to {a: 1, b: 2, c: 3, d: 4}
@@ -176,12 +180,8 @@ var fxAx = function(){
 						
 						if (self1.bIsEditMode){
 
-							let oTableBodys = document.getElementsByClassName(self1.sElementId);
-							if (oTableBodys.length == 0){
-								return self1.d;
-							}
-							let oTableBody = oTableBodys[0];
-							let oTableRow = oTableBody.querySelectorAll("#table-id")[nProperty];
+							let oTableRow = oElementListObject.querySelectorAll("#" + sTemplateRowId)[nProperty];
+							console.log(oTableRow);
 							self.editRow(value, oTableRow);
 							self1.bIsEditMode = false;
 
@@ -198,15 +198,28 @@ var fxAx = function(){
 				return self1.d;
 		  }
 		});
+	
+		return function(oTargetList, bIsEditMode, sElementId){
 
-		self1.d.set_element_id = function(sElementId){
-			return self1.sElementId = sElementId;
-		}
-		self1.d.set_edit_mode = function(pIsEditMode){
-			return self1.bIsEditMode = pIsEditMode;
-		}		
-		return function(oTargetList){
+			if (typeof bIsEditMode == 'boolean'){
+				self1.bIsEditMode = bIsEditMode;
+			}
+			if (sElementId){
 
+				let sPartId = sElementId.split('-');
+				let sModelKey = sPartId[1];
+				let sModelType = sPartId[0];
+
+				self1.sElementId = sElementId;
+				self1.sModelKey = sModelKey;
+
+				if (oBindingElementObject[sModelKey] && oBindingElementObject[sModelKey].length > 0){
+					oElementBodyObject = oBindingElementObject[sModelKey][0];
+					oElementRowObject = oElementBodyObject.querySelector("#"+self1.sElementId+"-row"); // find row to copy\
+					oElementListObject = document.getElementById(self1.sElementId + "-list");
+				}
+
+			}
 			if (oTargetList){
 				self1.d.splice(0,self1.d.length);
 				self1.d = oTargetList;
@@ -218,6 +231,10 @@ var fxAx = function(){
 
 	} // end of observableList
 	
+	self.observableList = function(oTargetList){
+		return new observableList(oTargetList);
+	}
+
 	self.applyBindings = function(oModelObject, oRootElement){
 
 		self.oModelObject = oModelObject;
@@ -230,19 +247,37 @@ var fxAx = function(){
 			if (!oBindingElementObject[sModelKey]){
 				oBindingElementObject[sModelKey] = [];
 			}
-			oBindingElementObject[sModelKey].push(document.getElementsByClassName(sElementId)[0]);
 
+			let oElementList = oRootElement.getElementsByClassName(sElementId);
+
+			if (oElementList.length == 0){
+				console.log("unable to bind element " + sElementId + ". Element not found.");
+			}else{
+				for (let i = 0; i<oElementList.length; i++){
+					oBindingElementObject[sModelKey].push(oElementList[i]);
+				}
+			}
+			
 		} // end of applyTextBinding
 
 		var applyListBinding = function(sModelKey, oModelList, sElementId){
 
-			oModelList().set_element_id(sElementId);
 			// register dom element with model key
 			if (!oBindingElementObject[sModelKey]){
 				oBindingElementObject[sModelKey] = [];
 			}
-			oBindingElementObject[sModelKey].push(document.getElementsByClassName(sElementId)[0]);
-			oBindingTargetList[sModelKey] 
+
+			let oElementList = oRootElement.getElementsByClassName(sElementId);
+
+			if (oElementList.length == 0){
+				console.log("unable to bind element " + sElementId + ". Element not found.");
+			}else{
+				for (let i = 0; i<oElementList.length; i++){
+					oBindingElementObject[sModelKey].push(oElementList[i]);
+				}
+			}
+
+			oModelList(null,null,sElementId)
 
 		} // end of applyTextBinding
 
